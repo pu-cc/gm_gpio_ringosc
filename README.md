@@ -64,7 +64,7 @@ A GPIO ring oscillator essentially consists of a bidirectional `CC_IOBUF` primit
         .FF_OBF(1'b0)        // 0: disable, 1: enable
     ) iobuf_inst (
         .A(~io_lb),
-        .T(~osc_en | osc_halt), // 0: output, 1: input
+        .T(osc_halt), // 0: output, 1: input
         .Y(io_lb),
         .IO(osc_io)
     );
