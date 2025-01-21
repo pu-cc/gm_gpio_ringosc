@@ -21,5 +21,5 @@ jtag:
 	$(OFL) $(OFLFLAGS) -b gatemate_evb_jtag $(TOP)_00.cfg
 
 # requires: sudo usermod -a -G uucp $USER
-uart:
-	python3 tools/plot.py
+capture:
+	python3 tools/capture.py
