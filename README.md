@@ -19,7 +19,7 @@ This project documents the test methodology and contains a collection of tests a
 
 ### Industry Standard Considerations
 
-According to the [data sheet](https://colognechip.com/docs/ds1001-gatemate1-datasheet-latest.pdf), GateMate's single-ended GPIO support LVCMOS and LVTTL, compliant to the standards JESD8-5 and JESD8-7, resulting in the supported voltage levels from 1.2V to 2.5V Both standards do not appear to be publicly accessible, but only after registration to the [JEDEC](https://www.jedec.org/) organization.
+According to the [data sheet](https://colognechip.com/docs/ds1001-gatemate1-datasheet-latest.pdf), GateMate's single-ended GPIO support LVCMOS and LVTTL, compliant to the standards JESD8-5 and JESD8-7. Both standards do not appear to be publicly accessible, but only after registration to the [JEDEC](https://www.jedec.org/) organization.
 
 In the context of the upcoming investigations, it seems obvious to cross-referencing to JESD8C, the interface standard for nominal 3V/3.3V supplies, as well.
 
@@ -52,7 +52,7 @@ A GPIO ring oscillator essentially consists of a bidirectional `CC_IOBUF` primit
 
 ```verilog
     CC_IOBUF #(
-        .DRIVE("3"),         // "3", "6", "9" or "12" mA
+        .DRIVE("12"),         // "3", "6", "9" or "12" mA
         .SLEW("SLOW"),       // "SLOW" or "FAST"
         .PULLUP(0),          // 0: disable, 1: enable
         .PULLDOWN(0),        // 0: disable, 1: enable
@@ -153,7 +153,7 @@ In order to be able to evaluate the counter values, they are sent using a naive 
 
 For the test setup we will be using and modifying the official GateMate FPGA development board. To be more precise, the board is not permanently fitted with an FPGA, but has a socket with which the FPGA is connected to the board by applying  a contact pressure. This wil be particularly helpful if chips are damaged during the test and need to be replaced. The board already features several voltage regulators for different GPIO voltages, which can usually be switched via jumper settings on the banks. Fortunately, there is already a controller configured for 3.3V. On the evaluation board, it is exclusively used for the Pmod-compatible level shifters.
 
-To test for operation at 3.3V with a sufficient margin, we configure the regulator to the absolute maximum continuous rating of 3.6V that is specified in JESD8-5A.01. To achieve this, it is required to set `R1` and `R2` for the feedback loop of the [MPM3833C](https://www.monolithicpower.com/en/mpm3833c.html) as follows:
+To test for operation at 3.3V with a sufficient margin, we configure the regulator to the absolute maximum continuous rating of 3.6V that is specified in JESD8-5A.01. To achieve this, it is required to set `R1=100k` and `R2=20k` for the feedback loop of the [MPM3833C](https://www.monolithicpower.com/en/mpm3833c.html):
 
 
 | V_out (V) | R1 (kOhm) | R2 (kOhm) |
@@ -161,17 +161,19 @@ To test for operation at 3.3V with a sufficient margin, we configure the regulat
 |       1.8 |  200 (1%) |       100 |
 |       2.5 |  200 (1%) |      63.2 |
 |       3.3 |  200 (1%) |      44.2 |
-| <span style="color:red">3.6</span> | <span style="color:red">100 (1%)</span> | <span style="color:red">20</span> |
+|       3.6 |  100 (1%) |        20 |
 
 It is now possible to supply the respective banks with 3.6V via the `VDDIO` jumper blocks using a cable from `JP14`.
 
 ![supply_3v6](doc/supply_3v6.jpg)
 
-In ring oscillator mode, the GPIOs under test would oscillate without a connected load. To avoid this and achieve more comparable results, it is worthwhile to add a capacitive load of 15pF to each GPIO under test.
+In ring oscillator mode, the GPIOs under test would oscillate without a connected load. To avoid this and achieve more comparable results, it is worthwhile to add a capacitive load of 15pF to each GPIO under test. To ensure that the capacity can be charged by the driver, the GPIO output driver is configured to 12mA.
 
 ![ext_cap](doc/ext_cap.png)
 
 ## Results
 
 :construction: WIP
+
+### 
 
