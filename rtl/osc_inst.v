@@ -9,7 +9,7 @@ module osc (
     wire io_lb;
 
     CC_IOBUF #(
-        .DRIVE("3"),         // "3", "6", "9" or "12" mA
+        .DRIVE("12"),         // "3", "6", "9" or "12" mA
         .SLEW("SLOW"),       // "SLOW" or "FAST"
         .PULLUP(0),          // 0: disable, 1: enable
         .PULLDOWN(0),        // 0: disable, 1: enable
