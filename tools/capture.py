@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 
 # UART configuration
-PORT = '/dev/ttyUSB2'
+PORT = '/dev/ttyUSB1'
 BAUDRATE = 115200
 
 def read_uart_data(serial_port):
@@ -21,6 +21,7 @@ def main():
     # Open the UART connection
     try:
         ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+        ser.dtr = 0 # keep dtr=reset off
         print(f"Connected to {PORT} at {BAUDRATE} baud.")
     except serial.SerialException as e:
         print(f"Failed to connect: {e}")

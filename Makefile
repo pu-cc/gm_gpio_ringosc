@@ -4,7 +4,7 @@ PR = p_r
 OFL = openFPGALoader
 
 TOP = top
-PRFLAGS  = -ccf rtl/$(TOP).ccf -cCP
+PRFLAGS  = -ccf rtl/$(TOP).ccf -cCP +uCIO
 YSFLAGS  = -nomx8 -noclkbuf
 OFLFLAGS = --index-chain 0
 
