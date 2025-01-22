@@ -2,7 +2,7 @@
 
 NET  "ref_clk"        Loc = "IO_SB_A8" | schmitt_trigger;
 
-NET  "osc_io_3v3"     Loc = "IO_NA_A0";
+NET  "osc_io_3v6"     Loc = "IO_NA_A0";
 NET  "osc_io_2v5"     Loc = "IO_SA_A0";
 
 NET  "uart_tx"        Loc = "IO_WA_B7"; # spi_io0
