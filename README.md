@@ -52,7 +52,7 @@ A GPIO ring oscillator essentially consists of a bidirectional `CC_IOBUF` primit
 
 ```verilog
     CC_IOBUF #(
-        .DRIVE("12"),         // "3", "6", "9" or "12" mA
+        .DRIVE("12"),        // "3", "6", "9" or "12" mA
         .SLEW("SLOW"),       // "SLOW" or "FAST"
         .PULLUP(0),          // 0: disable, 1: enable
         .PULLDOWN(0),        // 0: disable, 1: enable
@@ -171,11 +171,17 @@ In ring oscillator mode, the GPIOs under test would oscillate without a connecte
 
 ![ext_cap](doc/ext_cap.png)
 
+### :bar_chart: Data Acquisition
+
+:construction: WIP
+
+![capture](doc/capture.gif)
+
 ## Results
 
 :construction: WIP
 
-### How far can we go?
+### :fire: How far can we go?
 > [!CAUTION]
 > This **will** lead to permanent damage to the chip!
 
@@ -197,8 +203,8 @@ Starting at 2.3V and initially setting the external current source to 2.5V shows
 |      5.2 |           29 |
 |      5.4 |           34 |
 |      5.6 |           48 |
-|      5.7 |        70+ * |
-|      5.9 |      1,344 * |
+|      5.7 |   70+ :boom: |
+|      5.9 | 1,344 :boom: |
 
 From 5.7v it can be observed that the current starts to rise abruptly. From this point onwards, a starting influece can also be detected on the reference bank, and the oscillator frequencies drop on both banks. At 5.9V the current rises up to 1.344mA (7.9W!) until the chip switches off; from this point on it is permanently damaged.
 
