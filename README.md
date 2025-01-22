@@ -151,7 +151,7 @@ In order to be able to evaluate the counter values, they are sent using a naive 
 
 ### :wrench: Test Setup
 
-For the test setup we will be using and modifying the official GateMate FPGA development board. To be more precise, the board is not permanently fitted with an FPGA, but has a socket with which the FPGA is connected to the board by applying  a contact pressure. This wil be particularly helpful if chips are damaged during the test and need to be replaced. The board already features several voltage regulators for different GPIO voltages, which can usually be switched via jumper settings on the banks. Fortunately, there is already a controller configured for 3.3V. On the evaluation board, it is exclusively used for the Pmod-compatible level shifters.
+For the test setup we will be using and modifying the official GateMate FPGA development board. To be more precise, the board is not permanently fitted with an FPGA, but has a socket with which the FPGA is connected to the board by applying a contact pressure. This wil be particularly helpful if chips are damaged during the test and need to be replaced. The board already features several voltage regulators for different GPIO voltages, which can usually be switched via jumper settings on the banks. Fortunately, there is already a controller configured for 3.3V. On the evaluation board, it is exclusively used for the Pmod-compatible level shifters.
 
 To test for operation at 3.3V with a sufficient margin, we configure the regulator to the absolute maximum continuous rating of 3.6V that is specified in JESD8-5A.01. To achieve this, it is required to set `R1=100k` and `R2=20k` for the feedback loop of the [MPM3833C](https://www.monolithicpower.com/en/mpm3833c.html):
 
@@ -175,5 +175,31 @@ In ring oscillator mode, the GPIOs under test would oscillate without a connecte
 
 :construction: WIP
 
-### 
+### How far can we go?
+> [!CAUTION]
+> This **will** lead to permanent damage to the chip!
 
+Fortunately, I have a socket for the BGA324 package and am literally sitting at the FPGA source, so I can go overboard with some testing. To do this, we feed in 2.5V with an external current source and regularly increase the voltage in 10mV steps.
+
+![stress_vmax](doc/stress_vmax.png)
+
+Starting at 2.3V and initially setting the external current source to 2.5V shows a ring oscillator frequency of 154 MHz, while the static 2.5V reference bank oscillates at ~155 MHz, which is plausible. At 2.5V, the current comsumption of the tested bank is 8mA. As the voltage increases, the current consumption also increases in addition to the oscillator frequency:
+
+| V_IO (V) | Current (mA) |
+| :------: | -----------: |
+|      2.5 |            8 |
+|      3.0 |           12 |
+|      3.3 |           13 |
+|      3.6 |           15 |
+|      4.0 |           17 |
+|      4.5 |           20 |
+|      5.0 |           26 |
+|      5.2 |           29 |
+|      5.4 |           34 |
+|      5.6 |           48 |
+|      5.7 |        70+ * |
+|      5.9 |      1,344 * |
+
+From 5.7v it can be observed that the current starts to rise abruptly. From this point onwards, a starting influece can also be detected on the reference bank, and the oscillator frequencies drop on both banks. At 5.9V the current rises up to 1.344mA (7.9W!) until the chip switches off; from this point on it is permanently damaged.
+
+:construction: WIP
