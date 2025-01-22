@@ -1,9 +1,13 @@
 import serial
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import struct
 import time
 from datetime import datetime
+
+# Use the 'tkagg' backend for non-interactive plotting
+matplotlib.use('tkagg')
 
 # UART configuration
 PORT = '/dev/ttyUSB1'
@@ -39,11 +43,20 @@ def main():
     # Setup for real-time plotting
     plt.ion()
     fig, ax = plt.subplots()
-    x_data, y1_data, y2_data = [], [], []
     max_points = 100  # Limit the number of points shown on the plot
 
-    start_time = time.time()
+    # Create initial empty lines
+    line1, = ax.plot([], [], 'b-', label='3V6 Osc. (MHz)')
+    line2, = ax.plot([], [], 'r-', label='2V5 Osc. (MHz)')
+    ax.set_title("Real-time UART Data")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Osc. Value (MHz)")
+    ax.legend()
+    ax.grid(True, linestyle=':')
 
+    x_data, y1_data, y2_data = [], [], []
+
+    start_time = time.time()
     running = True
 
     def on_close(event):
@@ -72,16 +85,17 @@ def main():
                     y1_data.pop(0)
                     y2_data.pop(0)
 
-                # Update plot
-                ax.clear()
-                ax.plot(x_data, y1_data, marker='', linestyle='-', color='b', label='3V6 Osc. (MHz)')
-                ax.plot(x_data, y2_data, marker='', linestyle='-', color='r', label='2V5 Osc. (MHz)')
-                ax.set_title("Real-time UART Data")
-                ax.set_xlabel("Time (s)")
-                ax.set_ylabel("Osc. Value (MHz)")
-                ax.legend()
-                ax.grid(True, linestyle=':')
-                plt.pause(0.01)  # Small delay to update the plot
+                # Update plot lines
+                line1.set_xdata(x_data)
+                line1.set_ydata(y1_data)
+                line2.set_xdata(x_data)
+                line2.set_ydata(y2_data)
+
+                # Rescale axes to fit the data
+                ax.relim()
+                ax.autoscale_view()
+
+                plt.pause(0.01)
 
     except KeyboardInterrupt:
         print("Exiting...")
