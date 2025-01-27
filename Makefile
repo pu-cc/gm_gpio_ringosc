@@ -1,24 +1,26 @@
 ## tools
 YOSYS = yosys
-PR = p_r
+NEXTPNR = nextpnr-himbaechel
+GMPACK = gmpack
+GMUNPACK = gmunpack
 OFL = openFPGALoader
 
 TOP = top
-PRFLAGS  = -ccf rtl/$(TOP).ccf -cCP +uCIO
-YSFLAGS  = -nomx8 -noclkbuf
+YSFLAGS  = -luttree -noaddf -nomx8 -noclkbuf
 OFLFLAGS = --index-chain 0
 
 ## target sources
 VLOG_SRC = $(shell find ./rtl/ -type f \( -iname \*.v -o -iname \*.sv \))
 
 synth: $(VLOG_SRC)
-	$(YOSYS) -ql log/synth.log -p 'read_verilog -sv $^; synth_gatemate -top $(TOP) $(YSFLAGS) -vlog net/$(TOP)_synth.v'
+	$(YOSYS) -ql log/synth.log -p 'read_verilog -sv $^; synth_gatemate -top $(TOP) $(YSFLAGS) -json net/$(TOP)_synth.json'
 
 impl:
-	$(PR) -i net/$(TOP)_synth.v -o $(TOP) $(PRFLAGS) > log/$@.log
+	$(NEXTPNR) --device CCGM1A1 --json net/$(TOP)_synth.json --vopt ccf=rtl/$(TOP).ccf --vopt out=$(TOP)_impl.txt --router router2
+	$(GMPACK) $(TOP)_impl.txt $(TOP).bit
 
 jtag:
-	$(OFL) $(OFLFLAGS) -b gatemate_evb_jtag $(TOP)_00.cfg
+	$(OFL) $(OFLFLAGS) -b gatemate_evb_jtag $(TOP).bit
 
 # requires: sudo usermod -a -G uucp $USER
 capture:
