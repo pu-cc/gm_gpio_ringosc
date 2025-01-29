@@ -19,9 +19,11 @@ module top #(
     parameter BAUD_RATE = 115200,
     parameter STP_SMPL = 30 // no. of samples until 1s osc halt
 )(
-    input wire  ref_clk,
-    inout wire  osc_io_2v5,
-    inout wire  osc_io_3v6,
+    input  wire ref_clk,
+    inout  wire osc_io_2v5,
+    output wire const0_2v5, const1_2v5,
+    inout  wire osc_io_3v6,
+    output wire const0_3v6, const1_3v6,
     output wire uart_tx,
     output wire uart_tx_done_n,
     output wire uart_tx_busy_n,
