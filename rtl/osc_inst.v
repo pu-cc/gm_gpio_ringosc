@@ -13,16 +13,8 @@ module osc (
     wire osc_lb;
 
     CC_IOBUF #(
-        .DRIVE("12"),        // "3", "6", "9" or "12" mA
-        .SLEW("SLOW"),       // "SLOW" or "FAST"
-        .PULLUP(0),          // 0: disable, 1: enable
-        .PULLDOWN(0),        // 0: disable, 1: enable
-        .KEEPER(0),          // 0: disable, 1: enable
-        .SCHMITT_TRIGGER(0), // 0: disable, 1: enable
-        .DELAY_IBF(4'd0),    // input delay: 0..15
-        .DELAY_OBF(4'd0),    // input delay: 0..15
-        .FF_IBF(1'b0),       // 0: disable, 1: enable
-        .FF_OBF(1'b0)        // 0: disable, 1: enable
+        .DRIVE("12"), // "3", "6", "9" or "12" mA
+        .SLEW("SLOW") // "SLOW" or "FAST"
     ) iobuf_inst (
         .A(~osc_lb),
         .T(osc_halt | osc_rst), // 0: output, 1: input
