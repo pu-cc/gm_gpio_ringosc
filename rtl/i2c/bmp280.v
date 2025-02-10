@@ -12,7 +12,11 @@
  * Authors: Patrick Urban
  */
 
-module bmp280 (
+module bmp280 #(
+    parameter [2:0] osrs_p = 3'b000, // skipped
+    parameter [2:0] osrs_t = 3'b001, // oversampling x1
+    parameter [1:0] mode = 2'b11 // normal
+)(
     input         clk,
     input         rstn,
     input         start,
@@ -35,13 +39,14 @@ module bmp280 (
     localparam S_IDLE            = 1;
 
     localparam S_WRITE_CALIB_PTR = 2; // 0xA1..0x88
-    localparam S_READ_CALIB_WAIT = 3;
+    localparam S_READ_CALIB      = 3;
+    localparam S_READ_CALIB_WAIT = 4;
 
-    localparam S_WRITE_TEMP_PTR  = 4;
-    localparam S_READ_TEMP       = 5;
-    localparam S_READ_TEMP_WAIT  = 6;
+    localparam S_WRITE_TEMP_PTR  = 5;
+    localparam S_READ_TEMP       = 6;
+    localparam S_READ_TEMP_WAIT  = 7;
 
-    localparam S_DONE            = 7;
+    localparam S_DONE            = 8;
 
     reg [3:0] state = '0;
 
@@ -69,10 +74,10 @@ module bmp280 (
                     data_valid     <= 1'b0;
                     i2c_reg_rdwr   <= 1'b0;
                     i2c_reg_addr   <= 8'hF4; // config ctrl_meas
-                    i2c_reg_wrdata <= 8'h23; // osrs_t+osrs_p+mode
+                    i2c_reg_wrdata <= {osrs_t[2:0], osrs_p[2:0], mode[1:0]};
                     i2c_enable     <= 1'b1;
                     i2c_reg_len    <= 3;
-                    state          <= S_WRITE_TEMP_PTR; //S_WRITE_CALIB_PTR;
+                    state          <= S_WRITE_CALIB_PTR;
                 end
 
                 S_IDLE: begin
@@ -90,17 +95,24 @@ module bmp280 (
                         i2c_reg_addr <= 8'h88;
                         i2c_enable   <= 1'b1;
                         i2c_reg_len  <= 2;
-                        state        <= S_READ_CALIB_WAIT;
+                        state        <= S_READ_CALIB;
                     end
                 end
 
-                S_READ_CALIB_WAIT: begin
+                S_READ_CALIB: begin
                     i2c_enable <= 1'b0;
                     if (i2c_done) begin
                         i2c_reg_rdwr <= 1'b1;
                         i2c_enable   <= 1'b1;
                         i2c_reg_len  <= 1+26;
                         state        <= S_READ_TEMP_WAIT;
+                    end
+                end
+
+                S_READ_CALIB_WAIT: begin
+                    i2c_enable <= 1'b0;
+                    if (i2c_done) begin
+                        state  <= S_DONE;
                     end
                 end
 

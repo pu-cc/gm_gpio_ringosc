@@ -16,7 +16,7 @@
 
 module top #(
 `ifdef ICARUS
-    parameter REF_CLK = 10_000,
+    parameter REF_CLK = 100_000,
 `else
     parameter REF_CLK = 10_000_000,
 `endif
