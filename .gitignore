@@ -13,6 +13,7 @@
 *.used
 *_00.v
 *_synth.v
+*_synth.json
 *.id
 *.net
 *.pathes
