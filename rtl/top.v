@@ -15,7 +15,7 @@
  */
 
 module top #(
-    parameter REF_CLK = 10000000,
+    parameter REF_CLK = 10_000_000,
     parameter BAUD_RATE = 115200,
     parameter STP_SMPL = 30 // no. of samples until 1s osc halt
 )(
@@ -24,11 +24,19 @@ module top #(
     output wire const0_2v5, const1_2v5,
     inout  wire osc_io_3v6,
     output wire const0_3v6, const1_3v6,
+    inout  wire i2c_sda_io,
+    inout  wire i2c_scl_io,
+    output wire bmp280_addr_sel_o,
+    output wire bmp280_csb_const_o,
+    output wire [19:0] bmp280_temp_o,
     output wire uart_tx,
     output wire uart_tx_done_n,
     output wire uart_tx_busy_n,
     output wire osc_halt
 );
+    assign {const0_3v6, const0_2v5} = 2'b00;
+    assign {const1_3v6, const1_2v5} = 2'b11;
+
     // reset
     reg [5:0] rst_cnt = 0;
     wire rstn = &rst_cnt;
@@ -114,6 +122,98 @@ module top #(
     assign osc_halt = (stp_counter == 0);
     wire osc_rst = (ref_counter == 0);
 
+    // i2c interface
+    localparam C_BMP280_ADDR_SEL = 1'b0;
+    assign bmp280_addr_sel_o = C_BMP280_ADDR_SEL;
+    assign bmp280_csb_const_o = 1'b1;
+
+    wire i2c_enable;
+    wire [7:0] i2c_reg_addr;
+    wire [4:0] i2c_reg_len;
+    wire [7:0] i2c_reg_rddata;
+    wire [7:0] i2c_reg_wrdata;
+    wire i2c_reg_rdwr;
+    wire i2c_reg_done;
+    //wire [19:0] bmp280_temp_o;
+    reg bmp280_latch_req = 1'b0;
+
+    wire i2c_scl_oe;
+    wire i2c_scl_do;
+    wire i2c_scl_di;
+    wire i2c_sda_oe;
+    wire i2c_sda_do;
+    wire i2c_sda_di;
+
+    // 100kHz strobe generator
+    localparam NUM_CLK_I2C_STROBE = 25;
+    reg [$clog2(NUM_CLK_I2C_STROBE)-1:0] cnt_strobe = 0;
+    reg i2c_strobe = 0;
+
+    always @(posedge ref_clk or posedge rst) begin
+        if (rst == 1'b1) begin
+            cnt_strobe <= 0;
+            i2c_strobe <= 0;
+        end
+        else begin
+            if (ref_counter == 0)
+                bmp280_latch_req <= 1'b1;
+            else if (i2c_enable)
+                bmp280_latch_req <= 1'b0;
+            if (cnt_strobe == (NUM_CLK_I2C_STROBE - 1)) begin
+                cnt_strobe  <= '0;
+                i2c_strobe <= 1'b1;
+            end
+            else begin
+                cnt_strobe  <= cnt_strobe + 1;
+                i2c_strobe <= 1'b0;
+            end
+        end
+    end
+
+    i2c_ctrl i2c_inst (
+        .clk         (ref_clk),
+        .i2c_strobe  (i2c_strobe), // 100kHz strobe
+        .arst_n      (rstn),
+
+        .i2c_enable  (i2c_enable),
+        .i2c_addr    (C_BMP280_ADDR_SEL ? 7'h77 : 7'h76),
+        .reg_rdwr    (i2c_reg_rdwr),
+        .reg_addr    (i2c_reg_addr),
+        .reg_wrdata  (i2c_reg_wrdata),
+        .reg_rddata  (i2c_reg_rddata),
+        .reg_len     (i2c_reg_len),
+        .reg_done    (i2c_reg_done),
+
+        .scl_oe      (i2c_scl_oe),
+        .scl_do      (i2c_scl_do),
+        .scl_di      (i2c_scl_di),
+        .sda_oe      (i2c_sda_oe),
+        .sda_do      (i2c_sda_do),
+        .sda_di      (i2c_sda_di)
+    );
+
+    // bmp289 temperature sensor state machine
+    bmp280 bmp280_inst (
+        .clk            (ref_clk),
+        .rstn           (rstn),
+        .start          (bmp280_latch_req),
+        .temperature    (bmp280_temp_o),
+
+        .i2c_strobe     (i2c_strobe),
+        .i2c_enable     (i2c_enable),
+        .i2c_reg_addr   (i2c_reg_addr),
+        .i2c_reg_len    (i2c_reg_len),
+        .i2c_reg_wrdata (i2c_reg_wrdata),
+        .i2c_reg_rddata (i2c_reg_rddata),
+        .i2c_reg_rdwr   (i2c_reg_rdwr),
+        .i2c_done       (i2c_reg_done)
+    );
+
+    assign i2c_scl_io = i2c_scl_oe ? i2c_scl_do : 1'bz;
+    assign i2c_scl_di = i2c_scl_io;
+    assign i2c_sda_io = i2c_sda_oe ? i2c_sda_do : 1'bz;
+    assign i2c_sda_di = i2c_sda_io;
+
     // uart interface
     wire uart_tx_done, uart_tx_busy;
     assign uart_tx_done_n = ~uart_tx_done;
@@ -121,7 +221,7 @@ module top #(
 
     uart_tx #(
         .CLK_RATE(REF_CLK),
-        .BAUD_RATE(115200),
+        .BAUD_RATE(BAUD_RATE),
         .WORD_LEN(8),
         .WORD_COUNT(8),
         .PARITY("L"),
@@ -129,7 +229,7 @@ module top #(
     ) tx_inst (
         .clk_i(ref_clk),
         .rst_i(rst),
-        .tx_start_i(ref_counter == 0),
+        .tx_start_i(ref_counter == 0), // 1s
         .tx_data_i(txd),
         .tx_done_o(uart_tx_done),
         .tx_busy_o(uart_tx_busy),
