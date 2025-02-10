@@ -21,7 +21,8 @@ module bmp280 #(
     input         rstn,
     input         start,
     output reg    data_valid,
-    output reg [19:0] temperature,
+    output [19:0] temperature,
+    output [19:0] pressure,
 
     // interface to I2C controller
     input              i2c_strobe,
@@ -32,6 +33,7 @@ module bmp280 #(
     output reg [7:0]   i2c_reg_wrdata,
     output reg         i2c_reg_rdwr, // 0 = write, 1 = read
     input              i2c_done,
+    input              i2c_read_done,
     input              i2c_ack
 );
 
@@ -50,19 +52,22 @@ module bmp280 #(
 
     reg [3:0] state = '0;
 
-    // Temporary registers to hold the 3 bytes
-    reg [7:0] temp_msb, temp_lsb, temp_xlsb;
-    reg [7:0] press_msb, press_lsb, press_xlsb;
+    // Temporary registers to hold registers
+    reg [23:0] temp, press;
+    reg [(26*8)-1:0] calib;
+
+    assign temperature = temp[23:4];
+    assign pressure = press[23:4];
+
+    reg [23:0] test;
 
     always @(posedge clk or negedge rstn) begin
         if (!rstn) begin
             state          <= S_INIT;
             i2c_enable     <= 1'b0;
             data_valid     <= 1'b0;
-            temperature    <= 20'd0;
-            temp_msb       <= 8'd0;
-            temp_lsb       <= 8'd0;
-            temp_xlsb      <= 8'd0;
+            temp           <= 24'h0;
+            press          <= 24'h0;
             i2c_reg_addr   <= 8'h00;
             i2c_reg_rdwr   <= 1'b0;
             i2c_reg_wrdata <= '0;
@@ -105,12 +110,15 @@ module bmp280 #(
                         i2c_reg_rdwr <= 1'b1;
                         i2c_enable   <= 1'b1;
                         i2c_reg_len  <= 1+26;
-                        state        <= S_READ_TEMP_WAIT;
+                        state        <= S_READ_CALIB_WAIT;
                     end
                 end
 
                 S_READ_CALIB_WAIT: begin
                     i2c_enable <= 1'b0;
+                    if (i2c_read_done) begin
+                        calib <= {calib[(25*8)-1:0], i2c_reg_rddata};
+                    end
                     if (i2c_done) begin
                         state  <= S_DONE;
                     end
@@ -142,8 +150,10 @@ module bmp280 #(
 
                 S_READ_TEMP_WAIT: begin
                     i2c_enable <= 1'b0;
+                    if (i2c_read_done) begin
+                        temp <= {temp[15:0], i2c_reg_rddata};
+                    end
                     if (i2c_done) begin
-                        temp_msb <= i2c_reg_rddata;
                         state    <= S_DONE;
                     end
                 end
@@ -151,8 +161,6 @@ module bmp280 #(
                 S_DONE: begin
                     // Wait here until 'start' is deasserted so we don't immediately
                     // begin another transaction.
-                    temperature <= 0; //i2c_reg_rddata;
-                    //{temp_msb, temp_lsb, temp_xlsb} =
                     data_valid  <= 1'b1;
                     if (!start)
                         state <= S_IDLE;
