@@ -15,7 +15,11 @@
  */
 
 module top #(
+`ifdef ICARUS
+    parameter REF_CLK = 10_000,
+`else
     parameter REF_CLK = 10_000_000,
+`endif
     parameter BAUD_RATE = 115200,
     parameter STP_SMPL = 30 // no. of samples until 1s osc halt
 )(
@@ -134,6 +138,7 @@ module top #(
     wire [7:0] i2c_reg_wrdata;
     wire i2c_reg_rdwr;
     wire i2c_reg_done;
+    wire i2c_ack;
     //wire [19:0] bmp280_temp_o;
     reg bmp280_latch_req = 1'b0;
 
@@ -183,6 +188,7 @@ module top #(
         .reg_rddata  (i2c_reg_rddata),
         .reg_len     (i2c_reg_len),
         .reg_done    (i2c_reg_done),
+        .i2c_ack     (i2c_ack),
 
         .scl_oe      (i2c_scl_oe),
         .scl_do      (i2c_scl_do),
@@ -192,7 +198,7 @@ module top #(
         .sda_di      (i2c_sda_di)
     );
 
-    // bmp289 temperature sensor state machine
+    // bmp280 temperature sensor state machine
     bmp280 bmp280_inst (
         .clk            (ref_clk),
         .rstn           (rstn),
