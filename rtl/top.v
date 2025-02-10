@@ -32,7 +32,6 @@ module top #(
     inout  wire i2c_scl_io,
     output wire bmp280_addr_sel_o,
     output wire bmp280_csb_const_o,
-    output wire [19:0] bmp280_temp_o,
     output wire uart_tx,
     output wire uart_tx_done_n,
     output wire uart_tx_busy_n,
@@ -79,7 +78,7 @@ module top #(
     reg [31:0] ref_counter = 0;
     reg latch_req = 0;
     reg done = 0;
-    reg [2*32-1:0] txd;
+    reg [11*8-1:0] txd;
 
     // generate sample latch request
     always @(posedge ref_clk or posedge rst)
@@ -105,7 +104,7 @@ module top #(
                 latch_req <= 1'b0;
                 done <= 0;
                 ref_counter <= 0;
-                txd <= {osc_counter_latch_3v6, osc_counter_latch_2v5};
+                txd <= {osc_counter_latch_3v6, osc_counter_latch_2v5, bmp280_temp, 4'h0};
             end
         end
     end
@@ -138,8 +137,9 @@ module top #(
     wire [7:0] i2c_reg_wrdata;
     wire i2c_reg_rdwr;
     wire i2c_reg_done;
+    wire i2c_read_done;
     wire i2c_ack;
-    //wire [19:0] bmp280_temp_o;
+    wire [19:0] bmp280_temp;
     reg bmp280_latch_req = 1'b0;
 
     wire i2c_scl_oe;
@@ -188,6 +188,7 @@ module top #(
         .reg_rddata  (i2c_reg_rddata),
         .reg_len     (i2c_reg_len),
         .reg_done    (i2c_reg_done),
+        .i2c_read_done(i2c_read_done),
         .i2c_ack     (i2c_ack),
 
         .scl_oe      (i2c_scl_oe),
@@ -203,7 +204,7 @@ module top #(
         .clk            (ref_clk),
         .rstn           (rstn),
         .start          (bmp280_latch_req),
-        .temperature    (bmp280_temp_o),
+        .temperature    (bmp280_temp),
 
         .i2c_strobe     (i2c_strobe),
         .i2c_enable     (i2c_enable),
@@ -212,6 +213,7 @@ module top #(
         .i2c_reg_wrdata (i2c_reg_wrdata),
         .i2c_reg_rddata (i2c_reg_rddata),
         .i2c_reg_rdwr   (i2c_reg_rdwr),
+        .i2c_read_done  (i2c_read_done),
         .i2c_done       (i2c_reg_done)
     );
 
@@ -229,7 +231,7 @@ module top #(
         .CLK_RATE(REF_CLK),
         .BAUD_RATE(BAUD_RATE),
         .WORD_LEN(8),
-        .WORD_COUNT(8),
+        .WORD_COUNT(11),
         .PARITY("L"),
         .STOP(1)
     ) tx_inst (
