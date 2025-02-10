@@ -13,6 +13,7 @@ module i2c_ctrl (
     input  wire  [7:0] reg_wrdata,
     output wire  [7:0] reg_rddata,
     output reg         reg_done,
+    output reg         i2c_read_done,
     output reg         i2c_ack,
 
     output wire        scl_oe,
@@ -67,6 +68,7 @@ module i2c_ctrl (
             scl_do = 1'b1;
             sda_do = 1'b1;
             i2c_ack <= 1'b0;
+            i2c_read_done <= 0;
         end
         else if (i2c_strobe) begin
             case (state)
@@ -94,6 +96,7 @@ module i2c_ctrl (
                     state <= S_DAT1;
                 end
                 S_DAT1: begin
+                    i2c_read_done <= 0;
                     scl_do <= 1'b0;
                     sda_do <= tx_data[23];
                     if (rdwr && byte_cnt == 1)
@@ -137,6 +140,8 @@ module i2c_ctrl (
                 end
                 S_ACK4: begin
                     scl_do <= 1'b0;
+                    if (rdwr && (byte_cnt > 1))
+                        i2c_read_done <= 1'b1;
                     if (byte_cnt < (reg_len)) begin
                         bit_cnt <= '0;
                         state <= S_DAT1;
@@ -146,6 +151,7 @@ module i2c_ctrl (
                     end
                 end
                 S_STOP: begin
+                    i2c_read_done <= 0;
                     scl_do <= 1'b1;
                     reg_done <= 1'b1;
                     state <= S_IDLE;
