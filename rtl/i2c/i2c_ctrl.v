@@ -118,14 +118,14 @@ module i2c_ctrl (
                     else begin
                         byte_cnt <= byte_cnt + 1'b1;
                         state <= S_ACK1;
-                        if (rdwr)
-                            sda_do <= 0;
+                        if (rdwr) begin
+                            sda_do <= (byte_cnt == reg_len-1); // send (N)ACK
+                        end
                     end
                 end
                 S_ACK1: begin
                     scl_do <= 1'b0;
                     state <= S_ACK2;
-
                 end
                 S_ACK2: begin
                     scl_do <= 1'b1;
