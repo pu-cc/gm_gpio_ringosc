@@ -13,8 +13,8 @@
  */
 
 module bmp280 #(
-    parameter [2:0] osrs_p = 3'b000, // skipped
-    parameter [2:0] osrs_t = 3'b001, // oversampling x1
+    parameter [2:0] osrs_p = 3'b000, // press: skipped
+    parameter [2:0] osrs_t = 3'b001, // temp:  oversampling x1
     parameter [1:0] mode = 2'b11 // normal
 )(
     input         clk,
@@ -37,18 +37,19 @@ module bmp280 #(
     input              i2c_ack
 );
 
-    localparam S_INIT            = 0;
-    localparam S_IDLE            = 1;
+    localparam S_RESET           = 0;
+    localparam S_INIT            = 1;
+    localparam S_IDLE            = 2;
 
-    localparam S_WRITE_CALIB_PTR = 2; // 0xA1..0x88
-    localparam S_READ_CALIB      = 3;
-    localparam S_READ_CALIB_WAIT = 4;
+    localparam S_WRITE_CALIB_PTR = 3; // 0xA1..0x88
+    localparam S_READ_CALIB      = 4;
+    localparam S_READ_CALIB_WAIT = 5;
 
-    localparam S_WRITE_TEMP_PTR  = 5;
-    localparam S_READ_TEMP       = 6;
-    localparam S_READ_TEMP_WAIT  = 7;
+    localparam S_WRITE_TEMP_PTR  = 6;
+    localparam S_READ_TEMP       = 7;
+    localparam S_READ_TEMP_WAIT  = 8;
 
-    localparam S_DONE            = 8;
+    localparam S_DONE            = 9;
 
     reg [3:0] state = '0;
 
@@ -63,7 +64,7 @@ module bmp280 #(
 
     always @(posedge clk or negedge rstn) begin
         if (!rstn) begin
-            state          <= S_INIT;
+            state          <= S_RESET;
             i2c_enable     <= 1'b0;
             data_valid     <= 1'b0;
             temp           <= 24'h0;
@@ -75,14 +76,25 @@ module bmp280 #(
         end
         else if (i2c_strobe) begin
             case (state)
-                S_INIT: begin
+                S_RESET: begin
                     data_valid     <= 1'b0;
                     i2c_reg_rdwr   <= 1'b0;
-                    i2c_reg_addr   <= 8'hF4; // config ctrl_meas
-                    i2c_reg_wrdata <= {osrs_t[2:0], osrs_p[2:0], mode[1:0]};
+                    i2c_reg_addr   <= 8'hF3; // reset register
+                    i2c_reg_wrdata <= 8'hB6; // reset trigger
                     i2c_enable     <= 1'b1;
                     i2c_reg_len    <= 3;
-                    state          <= S_WRITE_CALIB_PTR;
+                    state          <= S_INIT;
+                end
+                S_INIT: begin
+                    data_valid <= 1'b0;
+                    if (i2c_done) begin
+                        i2c_reg_rdwr   <= 1'b0;
+                        i2c_reg_addr   <= 8'hF4; // config ctrl_meas
+                        i2c_reg_wrdata <= {osrs_t[2:0], osrs_p[2:0], mode[1:0]};
+                        i2c_enable     <= 1'b1;
+                        i2c_reg_len    <= 3;
+                        state          <= S_WRITE_CALIB_PTR;
+                    end
                 end
 
                 S_IDLE: begin
@@ -154,7 +166,7 @@ module bmp280 #(
                         temp <= {temp[15:0], i2c_reg_rddata};
                     end
                     if (i2c_done) begin
-                        state    <= S_DONE;
+                        state <= S_DONE;
                     end
                 end
 
