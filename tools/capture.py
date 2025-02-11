@@ -15,11 +15,21 @@ BAUDRATE = 115200
 
 def read_uart_data(serial_port):
     """Reads 8 bytes from the UART and returns a 32-bit integer."""
-    data = serial_port.read(8)  # Read 8 bytes
-    if len(data) == 8:
-        return struct.unpack('>II', data)  # Unpack as big-endian 32-bit integer
+    data = serial_port.read(12)
+    if len(data) == 12:
+        return struct.unpack('>III', data)  # Unpack as big-endian 32-bit integer
     else:
-        return None, None
+        return None, None, None
+
+def compensate_temperature(raw_temp24, dig_T1=0x6D42, dig_T2=0x6877, dig_T3=0xFC18):
+    raw_temp = raw_temp24 >> 4
+    var1 = (((raw_temp >> 3) - (dig_T1 << 1)) * dig_T2) >> 11
+    temp_diff = (raw_temp >> 4) - dig_T1
+    var2 = (((temp_diff * temp_diff) >> 12) * dig_T3) >> 14
+    t_fine = var1 + var2
+    temperature = (t_fine * 5 + 128) >> 8  # Temperature in degree C * 100
+
+    return temperature
 
 def main():
     # Open the UART connection
@@ -68,13 +78,15 @@ def main():
 
     try:
         while running:
-            value3v6, value2v5 = read_uart_data(ser)
-            if value3v6 is not None and value2v5 is not None:
+            value3v6, value2v5, raw_temp24 = read_uart_data(ser)
+            if value3v6 is not None and value2v5 is not None and raw_temp24 is not None:
+                ctemp = compensate_temperature(raw_temp24) / 100.0
+
                 elapsed_time = time.time() - start_time
                 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 # Write timestamp and value to file
-                file.write(f"{current_time}; {value3v6}; {value2v5}\n")
+                file.write(f"{current_time}; {value3v6}; {value2v5}; {ctemp}\n")
 
                 # Update data for plotting
                 x_data.append(elapsed_time)
