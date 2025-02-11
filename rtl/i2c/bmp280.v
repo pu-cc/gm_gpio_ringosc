@@ -33,7 +33,7 @@ module bmp280 #(
     output reg [7:0]   i2c_reg_wrdata,
     output reg         i2c_reg_rdwr, // 0 = write, 1 = read
     input              i2c_done,
-    input              i2c_read_done,
+    input              i2c_rd_done,
     input              i2c_ack
 );
 
@@ -128,7 +128,7 @@ module bmp280 #(
 
                 S_READ_CALIB_WAIT: begin
                     i2c_enable <= 1'b0;
-                    if (i2c_read_done) begin
+                    if (i2c_rd_done) begin
                         calib <= {calib[(25*8)-1:0], i2c_reg_rddata};
                     end
                     if (i2c_done) begin
@@ -162,7 +162,7 @@ module bmp280 #(
 
                 S_READ_TEMP_WAIT: begin
                     i2c_enable <= 1'b0;
-                    if (i2c_read_done) begin
+                    if (i2c_rd_done) begin
                         temp <= {temp[15:0], i2c_reg_rddata};
                     end
                     if (i2c_done) begin
