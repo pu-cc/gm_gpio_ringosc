@@ -1,4 +1,4 @@
-# :bulb: 3.3V GPIO Tolerance Evaluation for GateMate FPGA
+# :bulb: A 3.3V GPIO Tolerance Evaluation for GateMate FPGA
 
 * [Introduction](#introduction)
 * [Test Methodology and Expectations](#test-methodology-and-expectations)
@@ -39,12 +39,16 @@ In the context of the upcoming investigations, it seems obvious to cross-referen
 
 ## Test Methodology and Expectations
 
+1. **GPIO ring oscillator**: Is used to detect electrical degradation. Changes in frequency can indicate issues such as increased leakage current, degraded switching speed, or internal damage to the GPIO cells. In addition, another oscillator is operated in spec as a reference.
+2. **Temperature Monitoring**: Ring oscillators change with temperature. The temperature is kept constant during the test, but to avoid misinterpretations, it is also monitored.
+3. **Voltage Monitoring**:
+4. **Current Monitoring**:
+5. **Constant logic '0' and '1' levels**: 
+6. **Accelerated aging at high temperatures**: 
+
 ### :repeat: GPIO Ring Oscillators
 
 We will implement a ring oscillator on the GPIOs to measure frequency variations under different voltage stress conditions, as they are highly sensitive to changes in the electrical properties of the circuit. When the GPIOs are exposed to over-voltage conditions, these properties can shift, which directly impacts the oscillation frequency.
-
-1. **Detect Electrical Degradation**: Changes in frequency can indicate issues such as increased leakage current, degraded switching speed, or internal damage to the GPIO cells.
-2. **It Provides a Quantifiable Metric**: Frequency shifts are easy to measure and provide a clear, quantifiable metric for evaluating how well the GPIOs tolerate over-voltage stress.
 
 #### Oscillator Instance
 
@@ -52,20 +56,12 @@ A GPIO ring oscillator essentially consists of a bidirectional `CC_IOBUF` primit
 
 ```verilog
     CC_IOBUF #(
-        .DRIVE("12"),        // "3", "6", "9" or "12" mA
-        .SLEW("SLOW"),       // "SLOW" or "FAST"
-        .PULLUP(0),          // 0: disable, 1: enable
-        .PULLDOWN(0),        // 0: disable, 1: enable
-        .KEEPER(0),          // 0: disable, 1: enable
-        .SCHMITT_TRIGGER(0), // 0: disable, 1: enable
-        .DELAY_IBF(4'd0),    // input delay: 0..15
-        .DELAY_OBF(4'd0),    // input delay: 0..15
-        .FF_IBF(1'b0),       // 0: disable, 1: enable
-        .FF_OBF(1'b0)        // 0: disable, 1: enable
+        .DRIVE("12"), // "3", "6", "9" or "12" mA
+        .SLEW("SLOW") // "SLOW" or "FAST"
     ) iobuf_inst (
-        .A(~io_lb),
-        .T(osc_halt), // 0: output, 1: input
-        .Y(io_lb),
+        .A(~osc_lb),
+        .T(osc_halt | osc_rst), // 0: output, 1: input
+        .Y(osc_lb),
         .IO(osc_io)
     );
 ```
@@ -78,7 +74,7 @@ Instead of having to use an external oscilloscope with several channels, it is p
     reg [31:0] osc_counter = 0;
 
     // ringosc counter
-    always @(posedge io_lb or posedge osc_rst)
+    always @(posedge osc_lb or posedge osc_rst)
     begin
         if (osc_rst == 1) begin
             osc_counter <= 0;
@@ -181,11 +177,36 @@ In ring oscillator mode, the GPIOs under test would oscillate without a connecte
 
 :construction: WIP
 
+## Power Consumption and Oscillator Frequencies
+
+![vio_1v2_4v0_curr_freq](doc/vio_1v2_4v0_curr_freq.png)
+
+| V_IO (V) | Current (mA) | GPIO Oscillator (MHz) |
+| :------: | -----------: | --------------------: |
+|      1.2 |          3.3 |                  87.5 |
+|      1.8 |          7.3 |                 139.9 |
+|      2.5 |         11.7 |                 154.5 |
+|      2.6 |         12.2 |                 155.9 |
+|      2.7 |         12.8 |                 157.3 |
+|      2.8 |         13.4 |                 158.5 |
+|      2.9 |         14.0 |                 159.6 |
+|      3.0 |         14.6 |                 160.6 |
+|      3.1 |         15.1 |                 161.5 |
+|      3.2 |         15.6 |                 162.2 |
+|      3.3 |         16.1 |                 162.9 |
+|      3.4 |         16.6 |                 163.6 |
+|      3.5 |         17.2 |                 164.1 |
+|      3.6 |         17.7 |                 164.6 |
+|      3.7 |         18.2 |                 165.0 |
+|      3.8 |         18.7 |                 165.4 |
+|      3.9 |         19.3 |                 165.8 |
+|      4.0 |         19.8 |                 166.1 |
+
 ### :fire: How far can we go?
 > [!CAUTION]
 > This **will** lead to permanent damage to the chip!
 
-Fortunately, I have a socket for the BGA324 package and am literally sitting at the FPGA source, so I can go overboard with some testing. To do this, we feed in 2.5V with an external current source and regularly increase the voltage in 10mV steps.
+Fortunately, I have a [socket](https://www.ironwoodelectronics.com/catalog/Content/Drawings/SG-BGA-6229Dwg.pdf) for the BGA324 package and am literally sitting at the FPGA source, so I can go overboard with some testing. To do this, we feed in 2.5V with an external current source and regularly increase the voltage in 10mV steps.
 
 ![stress_vmax](doc/stress_vmax.png)
 
@@ -203,9 +224,9 @@ Starting at 2.3V and initially setting the external current source to 2.5V shows
 |      5.2 |           29 |
 |      5.4 |           34 |
 |      5.6 |           48 |
-|      5.7 |   70+ :boom: |
+|      5.7 |    70 :boom: |
 |      5.9 | 1,344 :boom: |
 
-From 5.7v it can be observed that the current starts to rise abruptly. From this point onwards, a starting influece can also be detected on the reference bank, and the oscillator frequencies drop on both banks. At 5.9V the current rises up to 1.344mA (7.9W!) until the chip switches off; from this point on it is permanently damaged.
+From 5.7V it can be observed that the current starts to rise abruptly. From this point onwards, a starting influece can also be detected on the reference bank, and the oscillator frequencies drop on both banks. At 5.9V the current rises up to 1.344mA (7.9W!) until the chip switches off; from this point on it is permanently damaged.
 
 :construction: WIP
