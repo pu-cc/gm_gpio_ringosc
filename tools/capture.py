@@ -52,19 +52,23 @@ def main():
 
     # Setup for real-time plotting
     plt.ion()
-    fig, ax = plt.subplots()
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, height_ratios=[3,1])
     max_points = 100  # Limit the number of points shown on the plot
 
     # Create initial empty lines
-    line1, = ax.plot([], [], 'b-', label='3V6 Osc. (MHz)')
-    line2, = ax.plot([], [], 'r-', label='2V5 Osc. (MHz)')
-    ax.set_title("Real-time UART Data")
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Osc. Value (MHz)")
-    ax.legend()
-    ax.grid(True, linestyle=':')
+    line1, = ax1.plot([], [], 'b-', label='3V6 Osc. (MHz)')
+    line2, = ax1.plot([], [], 'r-', label='2V5 Osc. (MHz)')
+    ax1.set_title("Real-time UART Data")
+    ax1.set_ylabel("Osc. Value (MHz)")
+    ax1.legend()
+    ax1.grid(True, linestyle=':')
 
-    x_data, y1_data, y2_data = [], [], []
+    line3, = ax2.plot([], [], 'g-')
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Temperature (C)")
+    ax2.grid(True, linestyle=':')
+
+    x_data, y1_data, y2_data, y3_data = [], [], [], []
 
     start_time = time.time()
     running = True
@@ -92,20 +96,26 @@ def main():
                 x_data.append(elapsed_time)
                 y1_data.append(value3v6 / 1e6)
                 y2_data.append(value2v5 / 1e6)
+                y3_data.append(ctemp)
                 if len(x_data) > max_points:
                     x_data.pop(0)
                     y1_data.pop(0)
                     y2_data.pop(0)
+                    y3_data.pop(0)
 
                 # Update plot lines
                 line1.set_xdata(x_data)
                 line1.set_ydata(y1_data)
                 line2.set_xdata(x_data)
                 line2.set_ydata(y2_data)
+                line3.set_xdata(x_data)
+                line3.set_ydata(y3_data)
 
                 # Rescale axes to fit the data
-                ax.relim()
-                ax.autoscale_view()
+                ax1.relim()
+                ax1.autoscale_view()
+                ax2.relim()
+                ax2.autoscale_view()
 
                 plt.pause(0.01)
 
