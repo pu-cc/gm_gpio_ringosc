@@ -14,7 +14,7 @@ module osc (
 
     CC_IOBUF #(
         .DRIVE("12"), // "3", "6", "9" or "12" mA
-        .SLEW("SLOW") // "SLOW" or "FAST"
+        .SLEW("FAST") // "SLOW" or "FAST"
     ) iobuf_inst (
         .A(~osc_lb),
         .T(osc_halt | osc_rst), // 0: output, 1: input
