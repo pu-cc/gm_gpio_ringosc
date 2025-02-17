@@ -40,12 +40,18 @@ module top #(
     assign {const0_3v6, const0_2v5} = 2'b00;
     assign {const1_3v6, const1_2v5} = 2'b11;
 
+    wire ref_clk_buf;
+    CC_BUFG refclk_buf(
+        .I(ref_clk),
+        .O(ref_clk_buf)
+    );
+
     // reset
     reg [5:0] rst_cnt = 0;
     wire rstn = &rst_cnt;
     wire rst = !rstn;
 
-    always @(posedge ref_clk) begin
+    always @(posedge ref_clk_buf) begin
         rst_cnt <= rst_cnt + !rstn;
     end
 
@@ -56,7 +62,7 @@ module top #(
     wire [31:0] osc_counter_latch_2v5, osc_counter_latch_3v6;
 
     osc osc_inst0 (
-        .ref_clk(ref_clk),
+        .ref_clk(ref_clk_buf),
         .osc_io(osc_io_2v5),
         .osc_rst(osc_rst),
         .osc_halt(osc_halt),
@@ -66,7 +72,7 @@ module top #(
     );
 
     osc osc_inst1 (
-        .ref_clk(ref_clk),
+        .ref_clk(ref_clk_buf),
         .osc_io(osc_io_3v6),
         .osc_rst(osc_rst),
         .osc_halt(osc_halt),
@@ -81,7 +87,7 @@ module top #(
     reg [12*8-1:0] txd;
 
     // generate sample latch request
-    always @(posedge ref_clk or posedge rst)
+    always @(posedge ref_clk_buf or posedge rst)
     begin
         if (rst == 1'b1) begin
             ref_counter <= 0;
@@ -154,7 +160,7 @@ module top #(
     reg [$clog2(NUM_CLK_I2C_STROBE)-1:0] cnt_strobe = 0;
     reg i2c_strobe = 0;
 
-    always @(posedge ref_clk or posedge rst) begin
+    always @(posedge ref_clk_buf or posedge rst) begin
         if (rst == 1'b1) begin
             cnt_strobe <= 0;
             i2c_strobe <= 0;
@@ -176,7 +182,7 @@ module top #(
     end
 
     i2c_ctrl i2c_inst (
-        .clk         (ref_clk),
+        .clk         (ref_clk_buf),
         .i2c_strobe  (i2c_strobe), // 100kHz strobe
         .arst_n      (rstn),
 
@@ -201,7 +207,7 @@ module top #(
 
     // bmp280 temperature sensor state machine
     bmp280 bmp280_inst (
-        .clk            (ref_clk),
+        .clk            (ref_clk_buf),
         .rstn           (rstn),
         .start          (bmp280_latch_req),
         .temperature    (bmp280_temp),
@@ -235,7 +241,7 @@ module top #(
         .PARITY("L"),
         .STOP(1)
     ) tx_inst (
-        .clk_i(ref_clk),
+        .clk_i(ref_clk_buf),
         .rst_i(rst),
         .tx_start_i(ref_counter == 0), // 1s
         .tx_data_i(txd),
