@@ -14,7 +14,7 @@
 
 module bmp280 #(
     parameter [2:0] osrs_p = 3'b000, // press: skipped
-    parameter [2:0] osrs_t = 3'b001, // temp:  oversampling x1
+    parameter [2:0] osrs_t = 3'b101, // temp:  oversampling x16
     parameter [1:0] mode = 2'b11 // normal
 )(
     input         clk,
