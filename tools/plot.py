@@ -2,13 +2,17 @@ import sys
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def load_and_plot(file_path):
+def load_and_plot(file_path, remove_pauses=True):
     data = pd.read_csv(file_path, delimiter=';', header=None,
-                       names=['Timestamp', 'GPIO DUT Oscillator (MHz)', 'GPIO REF Oscillator (MHz)', 'GPIO DUT Voltage (V)'],
+                       names=['Timestamp', 'GPIO DUT Oscillator (MHz)', 'GPIO REF Oscillator (MHz)', 'Temperature (C)'],
                        parse_dates=['Timestamp'])
 
     # Strip whitespace from column names
     data.columns = data.columns.str.strip()
+    dut_avg = data['GPIO DUT Oscillator (MHz)'].mean()
+    ref_avg = data['GPIO REF Oscillator (MHz)'].mean()
+    data = data[data['GPIO DUT Oscillator (MHz)'] > dut_avg/2]
+    data = data[data['GPIO REF Oscillator (MHz)'] > ref_avg/2]
     data['GPIO DUT Oscillator (MHz)'] = data['GPIO DUT Oscillator (MHz)'] / 1e6
     data['GPIO REF Oscillator (MHz)'] = data['GPIO REF Oscillator (MHz)'] / 1e6
 
@@ -22,8 +26,8 @@ def load_and_plot(file_path):
     ax1.grid(True)
 
     ax2 = ax1.twinx()
-    line3, = ax2.plot(data['Timestamp'], data['GPIO DUT Voltage (V)'], label='GPIO DUT Voltage (V)', color='y', linestyle='-', marker='')
-    ax2.set_ylabel('Voltage (V)')
+    line3, = ax2.plot(data['Timestamp'], data['Temperature (C)'], label='Temperature (C)', color='y', linestyle='-', marker='')
+    ax2.set_ylabel('Temperature (C)')
     ax2.grid(True)
 
     # Merge legends
