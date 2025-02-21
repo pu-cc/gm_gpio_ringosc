@@ -50,8 +50,8 @@ def push_to_github(file_path):
     try:
         subprocess.run(["git", "add", file_path], check=True)
 
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        commit_message = f"Log file for {today}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        commit_message = f"Stress test log file: {today}"
         subprocess.run(["git", "commit", "-m", commit_message], check=True)
 
         subprocess.run(["git", "remote", "set-url", "origin", GIT_REPO_URL], check=True)
