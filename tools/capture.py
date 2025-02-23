@@ -26,11 +26,11 @@ GIT_REPO_URL = f"https://{os.getenv('GITHUB_USERNAME')}:{GITHUB_TOKEN}@github.co
 
 def read_uart_data(serial_port):
     """Reads 8 bytes from the UART and returns a 32-bit integer."""
-    data = serial_port.read(12)
-    if len(data) == 12:
-        return struct.unpack('>III', data)  # Unpack as big-endian 32-bit integer
+    data = serial_port.read(16)
+    if len(data) == 16:
+        return struct.unpack('>IIII', data)  # Unpack as big-endian 32-bit integer
     else:
-        return None, None, None
+        return None, None, None, None
 
 def compensate_temperature(raw_temp24, dig_T1=0x6D42, dig_T2=0x6877, dig_T3=0xFC18):
     raw_temp = raw_temp24 >> 4
@@ -79,17 +79,18 @@ def main():
     # Create initial empty lines
     line1, = ax1.plot([], [], 'b-', label='3V6 Osc. (MHz)')
     line2, = ax1.plot([], [], 'r-', label='2V5 Osc. (MHz)')
+    line3, = ax1.plot([], [], 'y-', label='1V8 Osc. (MHz)')
     ax1.set_title("Real-time UART Data")
     ax1.set_ylabel("Osc. Value (MHz)")
     ax1.legend()
     ax1.grid(True, linestyle=':')
 
-    line3, = ax2.plot([], [], 'g-')
+    line4, = ax2.plot([], [], 'g-')
     ax2.set_xlabel("Time (s)")
     ax2.set_ylabel("Temperature (C)")
     ax2.grid(True, linestyle=':')
 
-    x_data, y1_data, y2_data, y3_data = [], [], [], []
+    x_data, y1_data, y2_data, y3_data, y4_data = [], [], [], [], []
 
     start_time = time.time()
     running = True
@@ -102,6 +103,7 @@ def main():
     fig.canvas.mpl_connect('close_event', on_close)
 
     last_log_file = ''
+    push_enable = False
 
     try:
         while running:
@@ -110,32 +112,34 @@ def main():
             log_exists = os.path.exists(log_file)
 
             if not log_exists:
-                if last_log_file != '':
+                if last_log_file != '' and push_enable:
                     push_to_github(last_log_file)
                 else:
                     last_log_file = log_file
 
             with open(log_file, mode='a', newline='', buffering=1) as file:
-                value3v6, value2v5, raw_temp24 = read_uart_data(ser)
-                if value3v6 is not None and value2v5 is not None and raw_temp24 is not None:
+                value3v6, value2v5, value1v8, raw_temp24 = read_uart_data(ser)
+                if value3v6 is not None and value2v5 is not None and value1v8 is not None and raw_temp24 is not None:
                     ctemp = compensate_temperature(raw_temp24) / 100.0
 
                     elapsed_time = time.time() - start_time
                     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                     # Write timestamp and value to file
-                    file.write(f"{current_time}; {value3v6}; {value2v5}; {ctemp}\n")
+                    file.write(f"{current_time}; {value3v6}; {value2v5}; {value1v8}; {ctemp}\n")
 
                     # Update data for plotting
                     x_data.append(elapsed_time)
                     y1_data.append(value3v6 / 1e6)
                     y2_data.append(value2v5 / 1e6)
-                    y3_data.append(ctemp)
+                    y3_data.append(value1v8 / 1e6)
+                    y4_data.append(ctemp)
                     if len(x_data) > max_points:
                         x_data.pop(0)
                         y1_data.pop(0)
                         y2_data.pop(0)
                         y3_data.pop(0)
+                        y4_data.pop(0)
 
                     # Update plot lines
                     line1.set_xdata(x_data)
@@ -144,6 +148,8 @@ def main():
                     line2.set_ydata(y2_data)
                     line3.set_xdata(x_data)
                     line3.set_ydata(y3_data)
+                    line4.set_xdata(x_data)
+                    line4.set_ydata(y4_data)
 
                     # Rescale axes to fit the data
                     ax1.relim()

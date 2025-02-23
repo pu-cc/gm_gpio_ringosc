@@ -24,6 +24,8 @@ module top #(
     parameter STP_SMPL = 30 // no. of samples until 1s osc halt
 )(
     input  wire ref_clk,
+    inout  wire osc_io_1v8,
+    output wire const0_1v8, const1_1v8,
     inout  wire osc_io_2v5,
     output wire const0_2v5, const1_2v5,
     inout  wire osc_io_3v6,
@@ -37,8 +39,8 @@ module top #(
     output wire uart_tx_busy_n,
     output wire osc_halt
 );
-    assign {const0_3v6, const0_2v5} = 2'b00;
-    assign {const1_3v6, const1_2v5} = 2'b11;
+    assign {const0_3v6, const0_2v5, const0_1v8} = 3'b000;
+    assign {const1_3v6, const1_2v5, const1_1v8} = 3'b111;
 
     wire ref_clk_buf;
     CC_BUFG refclk_buf(
@@ -55,13 +57,21 @@ module top #(
         rst_cnt <= rst_cnt + !rstn;
     end
 
-    wire [31:0] osc_counter_2v5;
-    wire [31:0] osc_counter_3v6;
-
-    wire osc_latch_ack_2v5, osc_latch_ack_3v6;
-    wire [31:0] osc_counter_latch_2v5, osc_counter_latch_3v6;
+    wire [31:0] osc_counter_1v8, osc_counter_2v5, osc_counter_3v6;
+    wire osc_latch_ack_1v8, osc_latch_ack_2v5, osc_latch_ack_3v6;
+    wire [31:0] osc_counter_latch_1v8, osc_counter_latch_2v5, osc_counter_latch_3v6;
 
     osc osc_inst0 (
+        .ref_clk(ref_clk_buf),
+        .osc_io(osc_io_1v8),
+        .osc_rst(osc_rst),
+        .osc_halt(osc_halt),
+        .osc_latch_req(latch_req),
+        .osc_latch_ack(osc_latch_ack_1v8),
+        .osc_counter_latch(osc_counter_latch_1v8)
+    );
+
+    osc osc_inst1 (
         .ref_clk(ref_clk_buf),
         .osc_io(osc_io_2v5),
         .osc_rst(osc_rst),
@@ -71,7 +81,7 @@ module top #(
         .osc_counter_latch(osc_counter_latch_2v5)
     );
 
-    osc osc_inst1 (
+    osc osc_inst2 (
         .ref_clk(ref_clk_buf),
         .osc_io(osc_io_3v6),
         .osc_rst(osc_rst),
@@ -84,7 +94,7 @@ module top #(
     reg [31:0] ref_counter = 0;
     reg latch_req = 0;
     reg done = 0;
-    reg [12*8-1:0] txd;
+    reg [16*8-1:0] txd;
 
     // generate sample latch request
     always @(posedge ref_clk_buf or posedge rst)
@@ -106,11 +116,11 @@ module top #(
                 end
             end
             // Transfer latched value
-            if ((osc_latch_ack_2v5 & osc_latch_ack_3v6) || (done & osc_halt)) begin
+            if ((osc_latch_ack_1v8 & osc_latch_ack_2v5 & osc_latch_ack_3v6) || (done & osc_halt)) begin
                 latch_req <= 1'b0;
                 done <= 0;
                 ref_counter <= 0;
-                txd <= {osc_counter_latch_3v6, osc_counter_latch_2v5, 8'h0, bmp280_temp, 4'h0};
+                txd <= {osc_counter_latch_3v6, osc_counter_latch_2v5, osc_counter_latch_1v8, 8'h0, bmp280_temp, 4'h0};
             end
         end
     end
@@ -131,7 +141,35 @@ module top #(
     assign osc_halt = (stp_counter == 0);
     wire osc_rst = (ref_counter == 0);
 
-    // i2c interface
+    // 100kHz i2c strobe generator
+    localparam NUM_CLK_I2C_STROBE = 25;
+    reg [$clog2(NUM_CLK_I2C_STROBE)-1:0] cnt_strobe = 0;
+    reg i2c_strobe = 0;
+
+    always @(posedge ref_clk_buf or posedge rst) begin
+        if (rst == 1'b1) begin
+            cnt_strobe <= 0;
+            i2c_strobe <= 0;
+        end
+        else begin
+            if (ref_counter == 0) begin
+                bmp280_latch_req <= 1'b1;
+            end
+            else if (i2c_enable) begin
+                bmp280_latch_req <= 1'b0;
+            end
+            if (cnt_strobe == (NUM_CLK_I2C_STROBE - 1)) begin
+                cnt_strobe <= '0;
+                i2c_strobe <= 1'b1;
+            end
+            else begin
+                cnt_strobe <= cnt_strobe + 1;
+                i2c_strobe <= 1'b0;
+            end
+        end
+    end
+
+    // i2c0 interface
     localparam C_BMP280_ADDR_SEL = 1'b0;
     assign bmp280_addr_sel_o = C_BMP280_ADDR_SEL;
     assign bmp280_csb_const_o = 1'b1;
@@ -155,33 +193,7 @@ module top #(
     wire i2c_sda_do;
     wire i2c_sda_di;
 
-    // 100kHz strobe generator
-    localparam NUM_CLK_I2C_STROBE = 25;
-    reg [$clog2(NUM_CLK_I2C_STROBE)-1:0] cnt_strobe = 0;
-    reg i2c_strobe = 0;
-
-    always @(posedge ref_clk_buf or posedge rst) begin
-        if (rst == 1'b1) begin
-            cnt_strobe <= 0;
-            i2c_strobe <= 0;
-        end
-        else begin
-            if (ref_counter == 0)
-                bmp280_latch_req <= 1'b1;
-            else if (i2c_enable)
-                bmp280_latch_req <= 1'b0;
-            if (cnt_strobe == (NUM_CLK_I2C_STROBE - 1)) begin
-                cnt_strobe <= '0;
-                i2c_strobe <= 1'b1;
-            end
-            else begin
-                cnt_strobe <= cnt_strobe + 1;
-                i2c_strobe <= 1'b0;
-            end
-        end
-    end
-
-    i2c_ctrl i2c_inst (
+    i2c_ctrl i2c0_inst (
         .clk         (ref_clk_buf),
         .i2c_strobe  (i2c_strobe), // 100kHz strobe
         .arst_n      (rstn),
@@ -237,7 +249,7 @@ module top #(
         .CLK_RATE(REF_CLK),
         .BAUD_RATE(BAUD_RATE),
         .WORD_LEN(8),
-        .WORD_COUNT(12),
+        .WORD_COUNT(16),
         .PARITY("L"),
         .STOP(1)
     ) tx_inst (
