@@ -15,6 +15,12 @@ matplotlib.use('tkagg')
 PORT = '/dev/ttyUSB1'
 BAUDRATE = 115200
 
+git_push_enable = False
+if git_push_enable:
+    print("Info: push_to_github is enabled!")
+else:
+    print("Info: push_to_github is NOT enabled!")
+
 GITHUB_USER  = os.getenv("GITHUB_USERNAME")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -103,7 +109,6 @@ def main():
     fig.canvas.mpl_connect('close_event', on_close)
 
     last_log_file = ''
-    push_enable = False
 
     try:
         while running:
@@ -112,7 +117,7 @@ def main():
             log_exists = os.path.exists(log_file)
 
             if not log_exists:
-                if last_log_file != '' and push_enable:
+                if last_log_file != '' and git_push_enable:
                     push_to_github(last_log_file)
                 else:
                     last_log_file = log_file
