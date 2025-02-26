@@ -24,11 +24,11 @@ module top #(
     parameter STP_SMPL = 30 // no. of samples until 1s osc halt
 )(
     input  wire ref_clk,
-    inout  wire osc_io_1v8,
+    inout  wire osc_gpio_1v8,
     output wire const0_1v8, const1_1v8,
-    inout  wire osc_io_2v5,
+    inout  wire osc_gpio_2v5,
     output wire const0_2v5, const1_2v5,
-    inout  wire osc_io_3v6,
+    inout  wire osc_gpio_3v6,
     output wire const0_3v6, const1_3v6,
     inout  wire i2c_sda_io,
     inout  wire i2c_scl_io,
@@ -63,7 +63,7 @@ module top #(
 
     osc osc_inst0 (
         .ref_clk(ref_clk_buf),
-        .osc_io(osc_io_1v8),
+        .osc_io(osc_gpio_1v8),
         .osc_rst(osc_rst),
         .osc_halt(osc_halt),
         .osc_latch_req(latch_req),
@@ -73,7 +73,7 @@ module top #(
 
     osc osc_inst1 (
         .ref_clk(ref_clk_buf),
-        .osc_io(osc_io_2v5),
+        .osc_io(osc_gpio_2v5),
         .osc_rst(osc_rst),
         .osc_halt(osc_halt),
         .osc_latch_req(latch_req),
@@ -83,7 +83,7 @@ module top #(
 
     osc osc_inst2 (
         .ref_clk(ref_clk_buf),
-        .osc_io(osc_io_3v6),
+        .osc_io(osc_gpio_3v6),
         .osc_rst(osc_rst),
         .osc_halt(osc_halt),
         .osc_latch_req(latch_req),
