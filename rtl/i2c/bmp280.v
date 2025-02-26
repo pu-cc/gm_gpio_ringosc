@@ -14,7 +14,7 @@
 
 module bmp280 #(
     parameter [2:0] osrs_p = 3'b000, // press: skipped
-    parameter [2:0] osrs_t = 3'b101, // temp:  oversampling x16
+    parameter [2:0] osrs_t = 3'b010, // temp:  oversampling x2
     parameter [1:0] mode = 2'b11 // normal
 )(
     input         clk,
@@ -25,16 +25,16 @@ module bmp280 #(
     output [19:0] pressure,
 
     // interface to I2C controller
-    input              i2c_strobe,
-    output reg         i2c_enable,  // one-cycle pulse to start a transaction
-    output reg [7:0]   i2c_reg_addr,
-    output reg [4:0]   i2c_reg_len,
-    input      [7:0]   i2c_reg_rddata,
-    output reg [7:0]   i2c_reg_wrdata,
-    output reg         i2c_reg_rdwr, // 0 = write, 1 = read
-    input              i2c_done,
-    input              i2c_rd_done,
-    input              i2c_ack
+    input            i2c_strobe,
+    output reg       i2c_enable,  // one-cycle pulse to start a transaction
+    output reg [7:0] i2c_reg_addr,
+    output reg [4:0] i2c_reg_len,
+    input      [7:0] i2c_reg_rddata,
+    output reg [7:0] i2c_reg_wrdata,
+    output reg       i2c_reg_rdwr, // 0 = write, 1 = read
+    input            i2c_done,
+    input            i2c_rd_done,
+    input            i2c_ack
 );
 
     localparam S_RESET           = 0;
