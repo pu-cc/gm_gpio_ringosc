@@ -7,7 +7,7 @@
  *
  * This module implements a GPIO-based ring oscillator for stress testing and
  * diagnostics. It measures oscillation frequencies on two voltage domains (2.5V
- * and 3.3V) and transmits the results via a UART interface. The module includes
+ * and 3.6V) and transmits the results via a UART interface. The module includes
  * sampling, halting mechanisms, and a configurable UART for data communication.
  *
  * Copyright (C) 2024, 2025 Cologne Chip AG <support@colognechip.com>
@@ -21,7 +21,7 @@ module top #(
     parameter REF_CLK = 10_000_000,
 `endif
     parameter BAUD_RATE = 115200,
-    parameter STP_SMPL = 30 // no. of samples until 1s osc halt
+    parameter STP_SMPL = 60*10 // no. of samples until 1s osc halt
 )(
     input  wire ref_clk,
     inout  wire osc_gpio_1v8,
