@@ -82,6 +82,8 @@ def load_and_plot(csv_path, remove_pauses=True):
     #plt.xticks(rotation=45)
 
     # Show the plot
+    mng = plt.get_current_fig_manager()
+    mng.window.showMaximized()
     plt.show()
 
 load_and_plot(sys.argv[1])
