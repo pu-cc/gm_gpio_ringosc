@@ -54,26 +54,26 @@ def load_and_plot(csv_path, remove_pauses=True):
 
     difference = (data['GPIO 3V6 DUT Oscillator (MHz)'] - data['GPIO 1V8 REF Oscillator (MHz)']) / 3.6 - 1.8
     line_diff, = axd0.plot(data['Timestamp'], difference,
-                      label='Difference: REF - DUT (MHz)',
+                      label='Difference: 3V6 DUT - 1V8 REF (MHz)',
                       color='c',
                       linestyle='-', marker='')
     axd0.set_ylabel('Frequency Drift\nNormalized (MHz)')
     axd0.grid(True)
-    axd0.legend()
+    axd0.legend(loc="upper left")
 
     difference = (data['GPIO 2V5 REF Oscillator (MHz)'] - data['GPIO 1V8 REF Oscillator (MHz)']) / 2.5 - 1.8
     line_diff, = axd1.plot(data['Timestamp'], difference,
-                      label='Difference: REF - REF (MHz)',
+                      label='Difference: 2V5 REF - 1V8 REF (MHz)',
                       color='c',
                       linestyle='-', marker='')
     axd1.set_ylabel('Frequency Drift\nNormalized (MHz)')
     axd1.grid(True)
-    axd1.legend()
+    axd1.legend(loc="upper left")
 
     # Merge legends
     lines = [line1, line2, line3, line4]
     labels = [line.get_label() for line in lines]
-    ax1.legend(lines, labels)
+    ax1.legend(lines, labels, loc="upper left")
 
     # Formatting the plot
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
