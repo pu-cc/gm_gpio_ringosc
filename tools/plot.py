@@ -26,12 +26,12 @@ def load_and_plot(csv_path, remove_pauses=True):
     # Strip whitespace from column names
     data.columns = data.columns.str.strip()
     if filter_out_osc_halt:
-        dut_avg = data['GPIO 3V6 DUT Oscillator (MHz)'].mean()
-        ref0_avg = data['GPIO 2V5 REF Oscillator (MHz)'].mean()
-        ref1_avg = data['GPIO 1V8 REF Oscillator (MHz)'].mean()
-        data = data[data['GPIO 3V6 DUT Oscillator (MHz)'] > dut_avg]
-        data = data[data['GPIO 2V5 REF Oscillator (MHz)'] > ref0_avg]
-        data = data[data['GPIO 1V8 REF Oscillator (MHz)'] > ref1_avg]
+        dut_avg = data['GPIO 3V6 DUT Oscillator (MHz)'].max()
+        ref0_avg = data['GPIO 2V5 REF Oscillator (MHz)'].max()
+        ref1_avg = data['GPIO 1V8 REF Oscillator (MHz)'].max()
+        data = data[data['GPIO 3V6 DUT Oscillator (MHz)'] > dut_avg*0.95]
+        data = data[data['GPIO 2V5 REF Oscillator (MHz)'] > ref0_avg*0.95]
+        data = data[data['GPIO 1V8 REF Oscillator (MHz)'] > ref1_avg*0.95]
     data['GPIO 3V6 DUT Oscillator (MHz)'] = data['GPIO 3V6 DUT Oscillator (MHz)'] / 1e6
     data['GPIO 2V5 REF Oscillator (MHz)'] = data['GPIO 2V5 REF Oscillator (MHz)'] / 1e6
     data['GPIO 1V8 REF Oscillator (MHz)'] = data['GPIO 1V8 REF Oscillator (MHz)'] / 1e6
@@ -42,6 +42,12 @@ def load_and_plot(csv_path, remove_pauses=True):
     line1, = ax1.plot(data['Timestamp'], data['GPIO 3V6 DUT Oscillator (MHz)'], label='GPIO 3V6 DUT Oscillator (MHz)', color='b', linestyle='-', marker='')
     line2, = ax1.plot(data['Timestamp'], data['GPIO 2V5 REF Oscillator (MHz)'], label='GPIO 2V5 REF Oscillator (MHz)', color='r', linestyle='-', marker='')
     line3, = ax1.plot(data['Timestamp'], data['GPIO 1V8 REF Oscillator (MHz)'], label='GPIO 1V8 REF Oscillator (MHz)', color='y', linestyle='-', marker='')
+    ax1.axhline(y=data['GPIO 3V6 DUT Oscillator (MHz)'].min(), color='b', linestyle='--', marker='', linewidth=1)
+    ax1.axhline(y=data['GPIO 3V6 DUT Oscillator (MHz)'].max(), color='b', linestyle='--', marker='', linewidth=1)
+    ax1.axhline(y=data['GPIO 2V5 REF Oscillator (MHz)'].min(), color='r', linestyle='--', marker='', linewidth=1)
+    ax1.axhline(y=data['GPIO 2V5 REF Oscillator (MHz)'].max(), color='r', linestyle='--', marker='', linewidth=1)
+    ax1.axhline(y=data['GPIO 1V8 REF Oscillator (MHz)'].min(), color='y', linestyle='--', marker='', linewidth=1)
+    ax1.axhline(y=data['GPIO 1V8 REF Oscillator (MHz)'].max(), color='y', linestyle='--', marker='', linewidth=1)
     ax1.set_ylabel('Frequency (MHz)')
     ax1.grid(True)
 
