@@ -1,5 +1,12 @@
 `timescale 1ns / 1ps
 
+/**
+ * i2c/i2c_ctrl.v
+ *
+ * Copyright (C) 2025 Cologne Chip AG <support@colognechip.com>
+ * Authors: Patrick Urban
+ */
+
 module i2c_ctrl (
     input  wire        clk,
     input  wire        i2c_strobe,

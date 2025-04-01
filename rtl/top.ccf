@@ -17,8 +17,8 @@ NET  "const1_1v8"          Loc = "IO_EA_A4";
 ## i2c interface 0 (Pmod B)
 NET  "bmp280_addr_sel_o"   Loc = "IO_NB_A4";
 NET  "bmp280_csb_const_o"  Loc = "IO_NB_A5";
-NET  "i2c_sda_io"          Loc = "IO_NB_A6" | pullup;
-NET  "i2c_scl_io"          Loc = "IO_NB_A7" | pullup;
+NET  "i2c_sda_io"          Loc = "IO_NB_A6" | pullup=true;
+NET  "i2c_scl_io"          Loc = "IO_NB_A7" | pullup=true;
 
 ## uart (ftdi)
 NET  "uart_tx"             Loc = "IO_WA_B7"; # spi_io0
