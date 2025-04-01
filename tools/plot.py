@@ -7,7 +7,7 @@ import pandas as pd
 
 filter_out_osc_halt = True
 
-def load_and_plot(csv_path, remove_pauses=True):
+def load_csv(csv_path):
     if os.path.isfile(csv_path):
         data = pd.read_csv(csv_path, delimiter=';', header=None,
                            names=['Timestamp', 'GPIO 3V6 DUT Oscillator (MHz)', 'GPIO 2V5 REF Oscillator (MHz)', 'GPIO 1V8 REF Oscillator (MHz)', 'Temperature (C)'],
@@ -35,6 +35,40 @@ def load_and_plot(csv_path, remove_pauses=True):
     data['GPIO 3V6 DUT Oscillator (MHz)'] = data['GPIO 3V6 DUT Oscillator (MHz)'] / 1e6
     data['GPIO 2V5 REF Oscillator (MHz)'] = data['GPIO 2V5 REF Oscillator (MHz)'] / 1e6
     data['GPIO 1V8 REF Oscillator (MHz)'] = data['GPIO 1V8 REF Oscillator (MHz)'] / 1e6
+    return data
+
+def plot_simple(csv_path):
+    data = load_csv(csv_path)
+
+    fig, (ax0, ax1, ax2, ax3) = plt.subplots(4, sharex=True, height_ratios=[1,1,1,1])
+
+    ax0.plot(data['Timestamp'], data['GPIO 3V6 DUT Oscillator (MHz)'], label='GPIO 3V6 DUT Oscillator (MHz)', color='b', linestyle='-', marker='')
+    ax1.plot(data['Timestamp'], data['GPIO 2V5 REF Oscillator (MHz)'], label='GPIO 2V5 REF Oscillator (MHz)', color='r', linestyle='-', marker='')
+    ax2.plot(data['Timestamp'], data['GPIO 1V8 REF Oscillator (MHz)'], label='GPIO 1V8 REF Oscillator (MHz)', color='y', linestyle='-', marker='')
+    ax3.plot(data['Timestamp'], data['Temperature (C)'], label='Temperature (C)', color='g', linestyle='-', linewidth=0.5, marker='')
+
+    ax0.grid()
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+
+    ax0.legend()
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+
+    # Formatting the plot
+    ax0.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
+    plt.xlabel('Timestamp')
+    plt.tight_layout()
+
+    # Show the plot
+    mng = plt.get_current_fig_manager()
+    mng.window.showMaximized()
+    plt.show()
+
+def plot_drift(csv_path):
+    data = load_csv(csv_path)
 
     # Plot the data
     fig, (ax1, axd0, axd1) = plt.subplots(3, sharex=True, height_ratios=[3,1,1])
@@ -92,4 +126,5 @@ def load_and_plot(csv_path, remove_pauses=True):
     mng.window.showMaximized()
     plt.show()
 
-load_and_plot(sys.argv[1])
+#plot_simple(sys.argv[1])
+plot_drift(sys.argv[1])
