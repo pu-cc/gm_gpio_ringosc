@@ -40,7 +40,7 @@ def load_csv(csv_path):
 def plot_simple(csv_path):
     data = load_csv(csv_path)
 
-    fig, (ax0, ax1, ax2, ax3) = plt.subplots(4, sharex=True, height_ratios=[1,1,1,1])
+    fig, (ax0, ax1, ax2, ax3) = plt.subplots(4, sharex=True, height_ratios=[1,1,1,1], figsize=(8, 12))
 
     ax0.plot(data['Timestamp'], data['GPIO 3V6 DUT Oscillator (MHz)'], label='GPIO 3V6 DUT Oscillator (MHz)', color='b', linestyle='-', marker='')
     ax1.plot(data['Timestamp'], data['GPIO 2V5 REF Oscillator (MHz)'], label='GPIO 2V5 REF Oscillator (MHz)', color='r', linestyle='-', marker='')
@@ -52,10 +52,10 @@ def plot_simple(csv_path):
     ax2.grid()
     ax3.grid()
 
-    ax0.legend()
-    ax1.legend()
-    ax2.legend()
-    ax3.legend()
+    ax0.legend(loc="upper right")
+    ax1.legend(loc="upper right")
+    ax2.legend(loc="upper right")
+    ax3.legend(loc="upper right")
 
     # Formatting the plot
     ax0.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
@@ -63,8 +63,6 @@ def plot_simple(csv_path):
     plt.tight_layout()
 
     # Show the plot
-    mng = plt.get_current_fig_manager()
-    mng.window.showMaximized()
     plt.show()
 
 def plot_drift(csv_path):
@@ -126,5 +124,5 @@ def plot_drift(csv_path):
     mng.window.showMaximized()
     plt.show()
 
-#plot_simple(sys.argv[1])
-plot_drift(sys.argv[1])
+plot_simple(sys.argv[1])
+#plot_drift(sys.argv[1])
