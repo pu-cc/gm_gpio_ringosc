@@ -90,7 +90,7 @@ def plot_drift(csv_path):
     ax2.yaxis.label.set_color('g')
     ax2.grid(False)
 
-    difference = (data['GPIO 3V6 DUT Oscillator (MHz)'] - data['GPIO 1V8 REF Oscillator (MHz)']) / 3.6 - 1.8
+    difference = (data['GPIO 3V6 DUT Oscillator (MHz)'] - data['GPIO 1V8 REF Oscillator (MHz)']) #/ (3.6 - 1.8)
     line_diff, = axd0.plot(data['Timestamp'], difference,
                       label='Difference: 3V6 DUT - 1V8 REF (MHz)',
                       color='c',
@@ -99,7 +99,7 @@ def plot_drift(csv_path):
     axd0.grid(True)
     axd0.legend(loc="upper left")
 
-    difference = (data['GPIO 2V5 REF Oscillator (MHz)'] - data['GPIO 1V8 REF Oscillator (MHz)']) / 2.5 - 1.8
+    difference = (data['GPIO 2V5 REF Oscillator (MHz)'] - data['GPIO 1V8 REF Oscillator (MHz)']) #/ (2.5 - 1.8)
     line_diff, = axd1.plot(data['Timestamp'], difference,
                       label='Difference: 2V5 REF - 1V8 REF (MHz)',
                       color='c',
@@ -124,5 +124,5 @@ def plot_drift(csv_path):
     mng.window.showMaximized()
     plt.show()
 
-plot_simple(sys.argv[1])
-#plot_drift(sys.argv[1])
+#plot_simple(sys.argv[1])
+plot_drift(sys.argv[1])
