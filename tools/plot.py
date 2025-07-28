@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
 filter_out_osc_halt = True
 
 def load_csv(csv_path):
@@ -40,12 +43,33 @@ def load_csv(csv_path):
 def plot_simple(csv_path):
     data = load_csv(csv_path)
 
+    T = data['Temperature (C)']
+    f = data['GPIO 3V6 DUT Oscillator (MHz)']
+
+    # Referenztemperatur (z. B. 25 °C)
+    T0 = 25
+    T_centered = T - T0
+
+    # Feature-Matrix für Regressionsmodell (z. B. quadratisches Modell)
+    X = np.vstack([T_centered, T_centered**2]).T
+
+    # Lineare Regression fitten
+    model = LinearRegression().fit(X, f)
+
+    # Temperaturbedingte Frequenzkomponente vorhersagen
+    f_temp_model = model.predict(X)
+
+    # Frequenz bereinigt von Temperatur
+    f_clean = f - f_temp_model + model.intercept_  # Normiert auf f(T0)
+
     fig, (ax0, ax1, ax2, ax3) = plt.subplots(4, sharex=True, height_ratios=[1,1,1,1], figsize=(8, 12))
 
     ax0.plot(data['Timestamp'], data['GPIO 3V6 DUT Oscillator (MHz)'], label='GPIO 3V6 DUT Oscillator (MHz)', color='b', linestyle='-', marker='')
     ax1.plot(data['Timestamp'], data['GPIO 2V5 REF Oscillator (MHz)'], label='GPIO 2V5 REF Oscillator (MHz)', color='r', linestyle='-', marker='')
     ax2.plot(data['Timestamp'], data['GPIO 1V8 REF Oscillator (MHz)'], label='GPIO 1V8 REF Oscillator (MHz)', color='y', linestyle='-', marker='')
-    ax3.plot(data['Timestamp'], data['Temperature (C)'], label='Temperature (C)', color='g', linestyle='-', linewidth=0.5, marker='')
+    #ax3.plot(data['Timestamp'], data['Temperature (C)'], label='Temperature (C)', color='g', linestyle='-', linewidth=0.5, marker='')
+    ax3.plot(data['Timestamp'], f_clean, label='f_clean', color='g', linestyle='-', linewidth=0.5, marker='')
+    ax3.plot(data['Timestamp'], f_temp_model, label='f_temp_model', color='r', linestyle='-', linewidth=0.5, marker='')
 
     ax0.grid()
     ax1.grid()
@@ -124,5 +148,5 @@ def plot_drift(csv_path):
     mng.window.showMaximized()
     plt.show()
 
-#plot_simple(sys.argv[1])
-plot_drift(sys.argv[1])
+plot_simple(sys.argv[1])
+#plot_drift(sys.argv[1])
