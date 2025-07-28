@@ -17,7 +17,7 @@ VLOG_SRC = $(shell find ./rtl/ -type f \( -iname \*.v -o -iname \*.sv \))
 net/$(TOP)_synth.json: $(VLOG_SRC)
 	$(YOSYS) -l log/synth.log -p 'read_verilog -sv $^; synth_gatemate -top $(TOP) $(YSFLAGS) -vlog net/$(TOP)_synth.v -json net/$(TOP)_synth.json'
 
-$(TOP).txt: net/$(TOP)_synth.v rtl/$(TOP).ccf
+$(TOP).txt: net/$(TOP)_synth.json rtl/$(TOP).ccf
 	$(NEXTPNR) --device CCGM1A1 --json net/$(TOP)_synth.json --vopt ccf=rtl/$(TOP).ccf --vopt out=$(TOP).txt --router router2
 
 $(TOP).bit: $(TOP).txt
